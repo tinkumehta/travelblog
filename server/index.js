@@ -144,5 +144,10 @@ app.delete('/api/blogs/:id', auth, async (req, res) => {
   res.json({ message: 'Deleted' });
 });
 
-const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+app.post('/', async (req, res) => {
+  res.json({message : "HELLO TRAVEL"})
+})
+
+// const PORT = process.env.PORT || 8000;
+// app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
