@@ -1,3 +1,5 @@
+/*
+
 // server/index.js
 const express = require('express');
 const mongoose = require('mongoose');
@@ -150,3 +152,5 @@ app.get("/", (req, res) => res.send("Travel Blog"));
 export default app
 // const PORT = process.env.PORT || 8000;
 // app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+*/
