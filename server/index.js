@@ -145,9 +145,8 @@ app.delete('/api/blogs/:id', auth, async (req, res) => {
 });
 
 
-app.post('/', async (req, res) => {
-  res.json({message : "HELLO TRAVEL"})
-})
+app.get("/", (req, res) => res.send("Travel Blog"));
 
+export default app
 // const PORT = process.env.PORT || 8000;
 // app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
