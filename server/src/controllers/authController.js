@@ -30,7 +30,7 @@ export const login = async (req, res) => {
     console.log(`🔍 Looking for user: ${email}`);
     
     // Find user
-    const user = await User.findOne({ email });
+    const user = await User.find({ email });
     if (!user) {
       console.log('❌ User not found');
       return res.status(401).json({ error: 'User not found' });
