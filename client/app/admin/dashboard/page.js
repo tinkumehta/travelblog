@@ -18,7 +18,7 @@ export default function AdminDashboard() {
   }, []);
 
   const fetchBlogs = async () => {
-    const res = await fetch('http://localhost:5000/api/blogs');
+    const res = await fetch('https://travelserver-navy.vercel.app/api/blogs');
     const data = await res.json();
     setBlogs(data);
   };
@@ -30,7 +30,7 @@ export default function AdminDashboard() {
     formData.append('data', JSON.stringify(form));
     if (image) formData.append('image', image);
 
-    const url = editingId ? `http://localhost:5000/api/blogs/${editingId}` : 'http://localhost:5000/api/blogs';
+    const url = editingId ? `https://travelserver-navy.vercel.app/api/blogs/${editingId}` : 'https://travelserver-navy.vercel.app/api/blogs';
     const method = editingId ? 'PUT' : 'POST';
 
     const res = await fetch(url, {
@@ -48,7 +48,7 @@ export default function AdminDashboard() {
 
   const handleDelete = async (id) => {
     const token = localStorage.getItem('token');
-    await fetch(`http://localhost:5000/api/blogs/${id}`, {
+    await fetch(`https://travelserver-navy.vercel.app/api/blogs/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });

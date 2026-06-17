@@ -2,6 +2,11 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+
 // Login Controller
 export const login = async (req, res) => {
   try {
@@ -28,7 +33,7 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       console.log('❌ User not found');
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'User not found' });
     }
 
     console.log('✅ User found, checking password');

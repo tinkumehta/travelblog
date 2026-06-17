@@ -9,7 +9,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/blogs')
+    fetch('https://travelserver-navy.vercel.ap/api/blogs')
       .then(res => res.json())
       .then(setBlogs)
       .catch(err => console.log('Server not running yet:', err));

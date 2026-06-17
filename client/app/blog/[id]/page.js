@@ -10,7 +10,7 @@ export default function BlogDetail() {
 
   useEffect(() => {
     if (id) {
-      fetch(`http://localhost:5000/api/blogs/${id}`)
+      fetch(`https://travelserver-navy.vercel.app/api/blogs/${id}`)
         .then(res => res.json())
         .then(setBlog);
     }
