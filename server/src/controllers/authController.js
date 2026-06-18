@@ -30,22 +30,26 @@ export const login = async (req, res) => {
     console.log(`🔍 Looking for user: ${email}`);
     
     // Find user
-    const user = await User.find({ email });
-    if (!user) {
-      console.log('❌ User not found');
-      return res.status(401).json({ error: 'User not found' });
-    }
+    const user = await User.findOne({
+  email: email.trim().toLowerCase(),
+});
 
-    console.log('✅ User found, checking password');
-    
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      console.log('❌ Invalid password');
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
+if (!user) {
+  return res.status(401).json({
+    error: "User not found",
+  });
+}
 
-    console.log('✅ Password verified, generating token');
+const isValidPassword = await bcrypt.compare(
+  password,
+  user.password
+);
+
+if (!isValidPassword) {
+  return res.status(401).json({
+    error: "Invalid credentials",
+  });
+}
     
     // Generate token
     const token = jwt.sign(
