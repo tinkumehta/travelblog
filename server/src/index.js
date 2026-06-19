@@ -15,9 +15,11 @@ const PORT = process.env.PORT || 8000;
 
 // Middleware - IMPORTANT: Order matters!
 app.use(cors({
-  origin: process.env.CORS_FRONTEND,
+  origin: "https://travelblog-lemon.vercel.app" || process.env.CORS_FRONTEND,
   credentials: true,
 }));
+
+
 
 // JSON parsing middleware with error handling
 app.use(express.json({ 
