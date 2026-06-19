@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export default async function BlogPage() {
-  const res = await fetch("https://travelserver-navy.vercel.app/api/blogs", {
+  const res = await fetch("https://travelblog-server.vercel.app/api/blogs", {
     cache: "no-store",
   });
 
