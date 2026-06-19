@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
-import { createAdminUser } from './controllers/authController.js';
+// import { createAdminUser } from './controllers/authController.js';
 import authRoutes from './routes/authRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 
@@ -42,7 +42,7 @@ app.use((req, res, next) => {
 await connectDB();
 
 // Create admin user on server start
-await createAdminUser();
+// await createAdminUser();
 
 // Routes
 app.use('/api', authRoutes);
@@ -84,9 +84,9 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-// app.listen(PORT, () => {
-//   console.log(`🚀 Server running on port ${PORT}`);
-//   console.log(`📍 http://localhost:${PORT}`);
-// });
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📍 http://localhost:${PORT}`);
+});
 
 export default app;
