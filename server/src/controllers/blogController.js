@@ -1,6 +1,10 @@
 import Blog from '../models/Blog.js';
 import cloudinary from '../config/cloudinary.js';
 
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 // Get all blogs
 export const getAllBlogs = async (req, res) => {
   try {
