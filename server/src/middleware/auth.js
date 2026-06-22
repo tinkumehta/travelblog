@@ -2,6 +2,9 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken"
 import { User } from "../models/User.js";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
  const  auth = asyncHandler(async(req, res, next) => {
     try {
