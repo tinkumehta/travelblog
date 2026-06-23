@@ -1,201 +1,177 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { ApiError } from "../utils/ApiError.js";
-import { User } from "../models/User.js";
+// server/src/controllers/authController.js
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { User } from '../models/User.js';
+import dotenv from 'dotenv';
 
-const generateAccessAndRefreshToken = async (userId) => {
-    try {
-        const user = await User.findById(userId);
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
+dotenv.config();
 
-        user.refreshToken = refreshToken;
-        await user.save({ validateBeforeSave: false });
+// Login Controller
+export const login = async (req, res) => {
+  try {
+    console.log('📨 Login request received');
+    console.log('📦 Request body:', req.body);
+    
+    const { email, password } = req.body;
 
-        return { accessToken, refreshToken };
-    } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating tokens");
+    // Validate input
+    if (!email || !password) {
+      console.log('⚠️ Missing credentials');
+      return res.status(400).json({ 
+        error: 'Email and password are required',
+        details: { email: !!email, password: !!password }
+      });
     }
+
+    console.log(`🔍 Looking for user: ${email}`);
+    
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    if (!user) {
+      console.log('❌ User not found');
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    console.log('✅ User found, checking password');
+    
+    // Check password
+    const isValidPassword = await user.isPasswordCorrect(password);
+    
+    if (!isValidPassword) {
+      console.log('❌ Invalid password');
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    console.log('✅ Password verified, generating tokens');
+    
+    // Generate tokens
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    // Save refresh token
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.refreshToken;
+
+    console.log('✅ Login successful');
+    
+    res.status(200).json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: userResponse,
+    });
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    res.status(500).json({ 
+      error: 'Server error', 
+      message: error.message 
+    });
+  }
 };
 
 // Register Controller
-export const register = asyncHandler(async (req, res) => {
+export const register = async (req, res) => {
+  try {
     const { username, email, password } = req.body;
 
-    // Validation
-    if ([username, email, password].some((field) => field?.trim() === "")) {
-        throw new ApiError(401, "All fields are required");
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
     }
 
-    const existedUser = await User.findOne({
-        $or: [{ username }, { email }]
+    const existingUser = await User.findOne({
+      $or: [{ email: email.toLowerCase() }, { username: username.toLowerCase() }]
     });
 
-    if (existedUser) {
-        throw new ApiError(400, "User already exists");
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Create user
     const user = await User.create({
-        username: username.toLowerCase(),
-        email: email.toLowerCase(),
-        password,
+      username: username.toLowerCase(),
+      email: email.toLowerCase(),
+      password,
     });
 
-    const createdUser = await User.findById(user._id).select("-password -refreshToken");
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.refreshToken;
 
-    if (!createdUser) {
-        throw new ApiError(500, "Something went wrong registering user");
-    }
-
-    return res.status(201).json(
-        new ApiResponse(201, createdUser, "User created successfully")
-    );
-});
-
-// Login Controller
-export const login = asyncHandler(async (req, res) => {
-    const { email, username, password } = req.body;
-
-    if (!email && !username) {
-        throw new ApiError(401, "Email or username is required");
-    }
-
-    if (!password) {
-        throw new ApiError(401, "Password is required");
-    }
-
-    // Find user by email or username
-    const user = await User.findOne({
-        $or: [{ email: email?.toLowerCase() }, { username: username?.toLowerCase() }]
+    res.status(201).json({
+      success: true,
+      user: userResponse,
     });
-
-    if (!user) {
-        throw new ApiError(400, "User does not exist");
-    }
-
-    // Check password
-    const isPasswordCorrect = await user.isPasswordCorrect(password);
-
-    if (!isPasswordCorrect) {
-        throw new ApiError(401, "Invalid credentials");
-    }
-
-    // Generate tokens
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
-
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
-
-    const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    };
-
-    return res
-        .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
-        .json(
-            new ApiResponse(
-                200,
-                {
-                    user: loggedInUser,
-                    accessToken,
-                    refreshToken
-                },
-                "User logged in successfully"
-            )
-        );
-});
-
-// Create Admin User (called on server start)
-export const createAdminUser = async () => {
-    try {
-        console.log('🔧 Checking for admin user...');
-
-        const adminEmail = process.env.LOGIN_ADMIN || 'admin@travelblog.com';
-        const adminPassword = process.env.LOGIN_PASSWORD || 'admin123';
-
-        const adminExists = await User.findOne({ email: adminEmail.toLowerCase() });
-
-        if (!adminExists) {
-            const user = await User.create({
-                username: 'admin',
-                email: adminEmail.toLowerCase(),
-                password: adminPassword,
-            });
-            console.log(`✅ Admin user created: ${adminEmail} / ${adminPassword}`);
-        } else {
-            console.log(`✅ Admin user already exists: ${adminEmail}`);
-        }
-    } catch (error) {
-        console.error('❌ Error creating admin user:', error.message);
-    }
+  } catch (error) {
+    console.error('❌ Register error:', error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
-// Refresh Token Controller
-export const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+// Create Admin User
+export const createAdminUser = async () => {
+  try {
+    console.log('🔧 Checking for admin user...');
+    
+    const adminEmail = process.env.LOGIN_ADMIN || 'admin@travelblog.com';
+    const adminPassword = process.env.LOGIN_PASSWORD || 'admin123';
+    
+    const adminExists = await User.findOne({ email: adminEmail.toLowerCase() });
+    
+    if (!adminExists) {
+      await User.create({
+        username: 'admin',
+        email: adminEmail.toLowerCase(),
+        password: adminPassword,
+      });
+      console.log(`✅ Admin user created: ${adminEmail} / ${adminPassword}`);
+    } else {
+      console.log(`✅ Admin user already exists: ${adminEmail}`);
+    }
+  } catch (error) {
+    console.error('❌ Error creating admin user:', error.message);
+  }
+};
 
-    if (!incomingRefreshToken) {
-        throw new ApiError(401, "Refresh token required");
+// Refresh Token
+export const refreshAccessToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Refresh token required' });
     }
 
-    try {
-        const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
-        const user = await User.findById(decodedToken._id);
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const user = await User.findById(decoded._id);
 
-        if (!user) {
-            throw new ApiError(401, "Invalid refresh token");
-        }
-
-        if (incomingRefreshToken !== user.refreshToken) {
-            throw new ApiError(401, "Refresh token expired or used");
-        }
-
-        const options = {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-        };
-
-        const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id);
-
-        return res
-            .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newRefreshToken, options)
-            .json(
-                new ApiResponse(
-                    200,
-                    { accessToken, refreshToken: newRefreshToken },
-                    "Access token refreshed"
-                )
-            );
-    } catch (error) {
-        throw new ApiError(401, error?.message || "Invalid refresh token");
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
     }
-});
 
-// Logout Controller
-export const logout = asyncHandler(async (req, res) => {
+    const newAccessToken = user.generateAccessToken();
+
+    res.json({ accessToken: newAccessToken });
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid refresh token' });
+  }
+};
+
+// Logout
+export const logout = async (req, res) => {
+  try {
     await User.findByIdAndUpdate(
-        req.user._id,
-        { $set: { refreshToken: null } },
-        { new: true }
+      req.user._id,
+      { $set: { refreshToken: null } },
+      { new: true }
     );
 
-    const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-    };
-
-    return res
-        .status(200)
-        .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
-        .json(new ApiResponse(200, {}, "User logged out successfully"));
-});
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

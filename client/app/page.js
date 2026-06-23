@@ -1,24 +1,39 @@
-// client/app/page.js (Homepage)
+// app/page.js
 'use client';
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { blogAPI } from '../config/api';
+import BlogCard from '../components/BlogCard';
+import Loading from '../components/Loading';
 
 export default function Home() {
   const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('https://travelblog-server.vercel.app/api/blogs')
-      .then(res => res.json())
-      .then(setBlogs)
-      .catch(err => console.log('Server not running yet:', err));
+    const fetchBlogs = async () => {
+      try {
+        setLoading(true);
+        const data = await blogAPI.getAll();
+        setBlogs(data);
+      } catch (error) {
+        console.error('Error fetching blogs:', error);
+        setError('Failed to load blogs. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogs();
   }, []);
 
   const filteredBlogs = blogs.filter(blog =>
     blog?.destination?.toLowerCase().includes(search.toLowerCase()) ||
     blog?.title?.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loading) return <Loading message="Loading blogs..." />;
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -35,37 +50,24 @@ export default function Home() {
             placeholder="Search by destination or title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />
         </div>
       </section>
 
       <section>
         <h2 className="text-3xl font-bold mb-6">Popular Destinations</h2>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBlogs.map(blog => (
-            <div key={blog._id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
-              <div className="relative h-48">
-                <Image 
-                  src={blog.imageUrl} 
-                  alt={blog.title} 
-                  fill 
-                  className="object-cover"
-                  unoptimized
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="text-xl font-bold mb-2">{blog.title}</h3>
-                <p className="text-gray-600 mb-2">📍 {blog.destination}</p>
-                <p className="text-gray-500 text-sm mb-3">{blog.places?.substring(0, 100)}...</p>
-                <Link href={`/blog/${blog._id}`} className="text-indigo-600 font-semibold hover:underline">
-                  Read More →
-                </Link>
-              </div>
-            </div>
+            <BlogCard key={blog._id} blog={blog} />
           ))}
         </div>
-        {blogs.length === 0 && (
+        {blogs.length === 0 && !error && (
           <p className="text-center text-gray-500 mt-8">
             No blogs yet. Login as admin to add your first blog!
           </p>
