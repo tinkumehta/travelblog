@@ -1,5 +1,5 @@
 // config/api.js
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = 'https://travelserver-navy.vercel.app' || 'http://localhost:5000';
 
 export const API_CONFIG = {
   baseURL: API_BASE_URL,
