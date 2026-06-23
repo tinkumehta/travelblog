@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 8000;
 
 // Middleware - IMPORTANT: Order matters!
 app.use(cors({
-  origin: ['https://travelblog.vercel.app', 'http://localhost:3000'],
+  origin: 'https://travelblog-lemon.vercel.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
