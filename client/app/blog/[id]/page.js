@@ -15,6 +15,11 @@ export default function BlogDetail() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Log the ID for debugging
+    console.log('📚 Blog ID from params:', id);
+    console.log('🌐 Current URL:', window.location.href);
+    console.log('🌐 API URL:', process.env.NEXT_PUBLIC_API_URL);
+
     if (!id) {
       console.log('⚠️ No ID provided');
       setError('No blog ID provided');
@@ -27,11 +32,15 @@ export default function BlogDetail() {
         setLoading(true);
         setError(null);
         console.log(`📚 Fetching blog with ID: ${id}`);
-        console.log(`🌐 API URL: ${process.env.NEXT_PUBLIC_API_URL}`);
         
         const data = await blogAPI.getById(id);
         console.log('✅ Blog data received:', data);
-        setBlog(data);
+        
+        if (!data) {
+          setError('Blog post not found');
+        } else {
+          setBlog(data);
+        }
       } catch (error) {
         console.error('❌ Error fetching blog:', error);
         setError(error.message || 'Failed to load blog post');
